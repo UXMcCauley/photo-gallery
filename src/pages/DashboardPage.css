@@ -2,39 +2,58 @@
   --background: #050507;
   display: flex;
   justify-content: center;
-  padding: 8px 0;
+  padding: 14px 0 12px;
 }
 
 .dashboard-logo {
   display: block;
-  width: min(280px, 80vw);
+  width: min(210px, 62vw);
   height: auto;
   margin: 0 auto;
 }
 
 .dashboard-content {
-  padding: 12px 8px 24px;
+  --section-padding-x: 12px;
+  --section-padding-y: 10px;
+  --dashboard-bottom-space: 24px;
   background: #050507;
+  padding-bottom: var(--dashboard-bottom-space);
 }
 
-.clock-card,
-.metric-card,
-.announcement-card {
-  --background: #18181c;
+.dashboard-section {
+  padding: var(--section-padding-y) var(--section-padding-x);
+}
+
+.ios-surface {
+  --background: linear-gradient(180deg, rgba(38, 40, 51, 0.8), rgba(24, 25, 31, 0.95));
+  background: var(--background);
   color: #f4f5f8;
-  border: 1px solid #2a2b32;
-  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 18px;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+.clock-card {
+  margin: 0;
+}
+
+.clock-card ion-card-subtitle {
+  color: #b8bcc9;
+  font-weight: 600;
 }
 
 .clock-card ion-card-title {
-  font-size: 2.2rem;
-  font-weight: 700;
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   text-align: center;
 }
 
 .clock-label {
   text-align: center;
-  margin-top: -2px;
+  margin-top: -4px;
+  color: #d2d5df;
 }
 
 .clock-status {
@@ -42,20 +61,19 @@
   margin: 8px auto 18px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: #2a2b32;
+  background: rgba(62, 66, 81, 0.56);
   font-weight: 600;
 }
 
 .clock-note {
-  margin: 12px 0 4px;
+  margin: 12px 0 2px;
   text-align: center;
 }
 
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 8px;
+  gap: 10px;
 }
 
 .metric-card {
@@ -63,23 +81,24 @@
 }
 
 .metric-card ion-card-header {
-  padding-bottom: 8px;
+  padding-bottom: 6px;
 }
 
 .metric-card ion-card-subtitle {
-  color: #ffffff;
+  color: #eef0f7;
   font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .metric-card ion-card-title {
-  color: #c7c9d1;
-  font-size: 1rem;
-  line-height: 1.15;
+  color: #c8ccda;
+  font-size: 0.96rem;
+  line-height: 1.2;
 }
 
 .metric-value {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: clamp(1.7rem, 5.5vw, 2rem);
+  font-weight: 800;
 }
 
 .metric-total {
@@ -88,8 +107,33 @@
   margin-left: 2px;
 }
 
+.announcement-shell {
+  padding: 14px 10px 10px;
+}
+
+.announcement-heading {
+  margin: 0 4px 12px;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.announcement-rail {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 2px 2px 4px;
+}
+
+.announcement-rail::-webkit-scrollbar {
+  display: none;
+}
+
 .announcement-card {
-  margin-top: 10px;
+  margin: 0;
+  min-width: 85%;
+  scroll-snap-align: start;
+  overflow: hidden;
 }
 
 .announcement-card img {

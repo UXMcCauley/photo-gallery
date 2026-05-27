@@ -1,17 +1,19 @@
-import { useState } from 'react';
 import { Redirect, Route, useHistory, useLocation } from 'react-router-dom';
 import {
   IonApp,
+  IonContent,
+  IonHeader,
   IonIcon,
+  IonItem,
   IonLabel,
   IonList,
-  IonItem,
-  IonNote,
-  IonPopover,
+  IonMenu,
   IonRouterOutlet,
   IonTabBar,
   IonTabButton,
   IonTabs,
+  IonTitle,
+  IonToolbar,
   setupIonicReact
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
@@ -67,131 +69,148 @@ const tabByPath: Record<string, string> = {
 const AppTabs: React.FC = () => {
   const location = useLocation();
   const history = useHistory();
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [menuAnchorEvent, setMenuAnchorEvent] = useState<Event | undefined>(undefined);
 
   const currentTab = tabByPath[location.pathname] ?? 'dashboard';
 
   const onProfileTap = (event: CustomEvent) => {
     event.preventDefault();
-    setMenuAnchorEvent(event);
-    setIsProfileMenuOpen(true);
+    const profileMenu = document.querySelector('ion-menu[menu-id="profile-drawer"]') as
+      | HTMLIonMenuElement
+      | null;
+    profileMenu?.open();
   };
 
-  const onMenuItemTap = (destination: string) => {
-    setIsProfileMenuOpen(false);
+  const onMenuItemTap = async (destination: string) => {
+    const profileMenu = document.querySelector('ion-menu[menu-id="profile-drawer"]') as
+      | HTMLIonMenuElement
+      | null;
+    await profileMenu?.close();
     history.push(destination);
   };
 
   return (
-    <IonTabs>
-      <IonRouterOutlet>
-        <Route exact path="/dashboard">
-          <DashboardPage />
-        </Route>
-        <Route exact path="/chat">
-          <PlaceholderPage
-            title="Chat"
-            subtitle="Conversations and coaching threads will live here."
-          />
-        </Route>
-        <Route exact path="/schedule">
-          <PlaceholderPage
-            title="Schedule"
-            subtitle="Calendar, sessions, and reminders will be organized here."
-          />
-        </Route>
-        <Route exact path="/ai-coach">
-          <PlaceholderPage
-            title="AI Coach"
-            subtitle="Training plans, prompts, and progress insights go here."
-          />
-        </Route>
-        <Route exact path="/announcements">
-          <PlaceholderPage
-            title="Announcements"
-            subtitle="Latest platform and team updates."
-          />
-        </Route>
-        <Route exact path="/notifications">
-          <PlaceholderPage
-            title="Notifications"
-            subtitle="Unread alerts and activity updates."
-          />
-        </Route>
-        <Route exact path="/settings">
-          <PlaceholderPage
-            title="Settings"
-            subtitle="Account and app preferences."
-          />
-        </Route>
-        <Route exact path="/profile">
-          <PlaceholderPage
-            title="Profile"
-            subtitle="Personal details, goals, and account status."
-          />
-        </Route>
-        <Route exact path="/real-time-resume">
-          <PlaceholderPage
-            title="Real-time Resume"
-            subtitle="Live achievements, milestones, and impact snapshots."
-          />
-        </Route>
-        <Route exact path="/">
-          <Redirect to="/dashboard" />
-        </Route>
-      </IonRouterOutlet>
-
-      <IonTabBar slot="bottom">
-        <IonTabButton selected={currentTab === 'dashboard'} tab="dashboard" href="/dashboard">
-          <IonIcon aria-hidden="true" icon={gridOutline} />
-          <IonLabel>Dashboard</IonLabel>
-        </IonTabButton>
-        <IonTabButton selected={currentTab === 'chat'} tab="chat" href="/chat">
-          <IonIcon aria-hidden="true" icon={chatbubbleEllipsesOutline} />
-          <IonLabel>Chat</IonLabel>
-        </IonTabButton>
-        <IonTabButton selected={currentTab === 'schedule'} tab="schedule" href="/schedule">
-          <IonIcon aria-hidden="true" icon={calendarOutline} />
-          <IonLabel>Schedule</IonLabel>
-        </IonTabButton>
-        <IonTabButton selected={currentTab === 'ai-coach'} tab="ai-coach" href="/ai-coach">
-          <IonIcon aria-hidden="true" icon={sparklesOutline} />
-          <IonLabel>AI Coach</IonLabel>
-        </IonTabButton>
-        <IonTabButton tab="profile-menu" href="/dashboard" onClick={onProfileTap}>
-          <IonIcon aria-hidden="true" icon={personCircleOutline} />
-          <IonLabel>Menu</IonLabel>
-        </IonTabButton>
-      </IonTabBar>
-
-      <IonPopover
-        isOpen={isProfileMenuOpen}
-        event={menuAnchorEvent}
-        onDidDismiss={() => setIsProfileMenuOpen(false)}
+    <>
+      <IonMenu
+        side="end"
+        type="overlay"
+        menuId="profile-drawer"
+        contentId="main-content"
+        className="profile-drawer"
       >
-        <IonList>
-          <IonItem button detail onClick={() => onMenuItemTap('/announcements')}>
-            Announcements
-          </IonItem>
-          <IonItem button detail onClick={() => onMenuItemTap('/notifications')}>
-            Notifications
-          </IonItem>
-          <IonItem button detail onClick={() => onMenuItemTap('/settings')}>
-            Settings
-          </IonItem>
-          <IonItem button detail onClick={() => onMenuItemTap('/profile')}>
-            Profile
-          </IonItem>
-          <IonItem button detail onClick={() => onMenuItemTap('/real-time-resume')}>
-            Real-time Resume
-          </IonItem>
-          <IonItem lines="none">
-            <IonNote color="medium">Avatar menu</IonNote>
-          </IonItem>
-        </IonList>
-      </IonPopover>
-    </IonTabs>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Menu</IonTitle>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent>
+          <IonList>
+            <IonItem button detail onClick={() => onMenuItemTap('/announcements')}>
+              Announcements
+            </IonItem>
+            <IonItem button detail onClick={() => onMenuItemTap('/notifications')}>
+              Notifications
+            </IonItem>
+            <IonItem button detail onClick={() => onMenuItemTap('/settings')}>
+              Settings
+            </IonItem>
+            <IonItem button detail onClick={() => onMenuItemTap('/profile')}>
+              Profile
+            </IonItem>
+            <IonItem button detail onClick={() => onMenuItemTap('/real-time-resume')}>
+              Real-time Resume
+            </IonItem>
+          </IonList>
+        </IonContent>
+      </IonMenu>
+
+      <IonTabs>
+        <IonRouterOutlet id="main-content">
+          <Route exact path="/dashboard">
+            <DashboardPage />
+          </Route>
+          <Route exact path="/chat">
+            <PlaceholderPage
+              title="Chat"
+              subtitle="Conversations and coaching threads will live here."
+            />
+          </Route>
+          <Route exact path="/schedule">
+            <PlaceholderPage
+              title="Schedule"
+              subtitle="Calendar, sessions, and reminders will be organized here."
+            />
+          </Route>
+          <Route exact path="/ai-coach">
+            <PlaceholderPage
+              title="AI Coach"
+              subtitle="Training plans, prompts, and progress insights go here."
+            />
+          </Route>
+          <Route exact path="/announcements">
+            <PlaceholderPage
+              title="Announcements"
+              subtitle="Latest platform and team updates."
+            />
+          </Route>
+          <Route exact path="/announcements/:announcementId">
+            <PlaceholderPage
+              title="Announcement Details"
+              subtitle="Full announcement content and follow-up actions."
+            />
+          </Route>
+          <Route exact path="/notifications">
+            <PlaceholderPage
+              title="Notifications"
+              subtitle="Unread alerts and activity updates."
+            />
+          </Route>
+          <Route exact path="/settings">
+            <PlaceholderPage
+              title="Settings"
+              subtitle="Account and app preferences."
+            />
+          </Route>
+          <Route exact path="/profile">
+            <PlaceholderPage
+              title="Profile"
+              subtitle="Personal details, goals, and account status."
+            />
+          </Route>
+          <Route exact path="/real-time-resume">
+            <PlaceholderPage
+              title="Real-time Resume"
+              subtitle="Live achievements, milestones, and impact snapshots."
+            />
+          </Route>
+          <Route exact path="/">
+            <Redirect to="/dashboard" />
+          </Route>
+        </IonRouterOutlet>
+
+        <IonTabBar slot="bottom">
+          <IonTabButton selected={currentTab === 'dashboard'} tab="dashboard" href="/dashboard">
+            <IonIcon aria-hidden="true" icon={gridOutline} />
+            <IonLabel>Dashboard</IonLabel>
+          </IonTabButton>
+          <IonTabButton selected={currentTab === 'chat'} tab="chat" href="/chat">
+            <IonIcon aria-hidden="true" icon={chatbubbleEllipsesOutline} />
+            <IonLabel>Chat</IonLabel>
+          </IonTabButton>
+          <IonTabButton selected={currentTab === 'schedule'} tab="schedule" href="/schedule">
+            <IonIcon aria-hidden="true" icon={calendarOutline} />
+            <IonLabel>Schedule</IonLabel>
+          </IonTabButton>
+          <IonTabButton selected={currentTab === 'ai-coach'} tab="ai-coach" href="/ai-coach">
+            <IonIcon aria-hidden="true" icon={sparklesOutline} />
+            <IonLabel>AI Coach</IonLabel>
+          </IonTabButton>
+          <IonTabButton tab="profile-menu" href="/dashboard" onClick={onProfileTap}>
+            <IonIcon aria-hidden="true" icon={personCircleOutline} />
+            <IonLabel>Menu</IonLabel>
+          </IonTabButton>
+        </IonTabBar>
+      </IonTabs>
+    </>
   );
 };
 
