@@ -3,25 +3,23 @@
 }
 
 .dashboard-toolbar {
-  --background: #050507;
-  --padding-top: 12px;
-  --padding-bottom: 3px;
-  --padding-start: 4px;
-  --padding-end: 4px;
-  --min-height: 44px;
+  --background-gradient: linear-gradient(180deg, rgba(42, 44, 63, 0.62), rgba(20, 21, 35, 0.72));
+  background: var(--background-gradient);
+  padding: 12px;
+  text-align: center;
+  vertical-align: middle;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  min-height: 44px;
-  padding: 0;
-  transition: min-height 280ms ease, padding 280ms ease, --min-height 280ms ease;
+  justify-content: center;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(10px);
 }
 
 .dashboard-logo {
   display: block;
-  width: min(162px, 46vw);
+  width: min(120px, 36vw);
   height: auto;
-  margin: 0 0 0 14px;
+  margin: 7px auto;
   transform-origin: left center;
   transition: width 280ms ease, margin 280ms ease, transform 280ms ease;
 }
@@ -39,6 +37,7 @@
 .dashboard-header--compact .dashboard-logo {
   width: min(65px, 20vw);
   margin-left: 12px;
+  margin-top: 7px;
   transform: translateY(-1px);
 }
 
