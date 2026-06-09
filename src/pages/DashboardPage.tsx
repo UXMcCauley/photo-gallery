@@ -111,8 +111,10 @@ const DashboardPage: React.FC = () => {
     const s = e.detail.scrollTop;
     metricsRef.current.forEach((el, i) => {
       if (!el) return;
-      const start = i < 3 ? 35 : 0;  // top row lags 35px behind bottom row
-      const p = Math.min(1, Math.max(0, (s - start) / 110));
+      // i=6 → mastery bar (fades first); i=3-5 → bottom row; i=0-2 → top row (fades last)
+      const start = i === 6 ? -15 : i < 3 ? 35 : 0;
+      const range = i === 6 ? 80  : 110;
+      const p = Math.min(1, Math.max(0, (s - start) / range));
 
       if (p === 0) {
         el.style.opacity = '';
@@ -187,12 +189,11 @@ const DashboardPage: React.FC = () => {
           {/* ── Hero: Greeting + Metrics Grid ── */}
           <div className="dash-hero">
 
-            {/* Transparent greeting row — floats over aurora */}
+            {/* Greeting row — single line, avatar centered with text */}
             <div className="dash-greeting-row">
-              <div className="dash-greeting-left">
-                <span className="dash-greeting-sub">{greeting},</span>
-                <span className="dash-greeting-name">{firstName}</span>
-              </div>
+              <span className="dash-greeting-text">
+                {greeting}, <span className="dash-greeting-name">{firstName}</span>
+              </span>
               <button
                 className="dash-avatar-btn"
                 onClick={openProfileMenu}
@@ -232,6 +233,24 @@ const DashboardPage: React.FC = () => {
                   </IonCardContent>
                 </IonCard>
               ))}
+            </div>
+
+            {/* Trade Mastery XP bar */}
+            <div
+              className="dash-mastery"
+              ref={(el) => { metricsRef.current[6] = el as HTMLElement; }}
+            >
+              <div className="dash-mastery-header">
+                <span className="dash-mastery-title">Trade Mastery</span>
+                <span className="dash-mastery-level">Lv. 4 → 5</span>
+              </div>
+              <div className="dash-mastery-track">
+                <div className="dash-mastery-fill" style={{ width: '20%' }} />
+              </div>
+              <div className="dash-mastery-footer">
+                <span className="dash-mastery-pts">2,340 pts</span>
+                <span className="dash-mastery-remaining">960 to Level 5</span>
+              </div>
             </div>
           </div>
 
