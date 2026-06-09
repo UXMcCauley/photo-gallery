@@ -100,6 +100,11 @@ const SchedulePage: React.FC = () => {
     [visibleDays, orderedShifts, anchorWeekStart]
   );
 
+  const isToday = (date: Date) =>
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate();
+
   const monthCells = useMemo<MonthCell[]>(() => {
     if (viewMode !== 'month') return [];
     const firstDayOfMonth = new Date(cursorDate.getFullYear(), cursorDate.getMonth(), 1);
@@ -135,10 +140,16 @@ const SchedulePage: React.FC = () => {
     });
   };
 
-  const isToday = (date: Date) =>
-    date.getFullYear() === today.getFullYear() &&
-    date.getMonth() === today.getMonth() &&
-    date.getDate() === today.getDate();
+  const navigateToShift = (
+    event: React.MouseEvent<HTMLButtonElement> | React.KeyboardEvent<HTMLButtonElement>,
+    shiftId: string
+  ) => {
+    const target = event.currentTarget;
+    window.requestAnimationFrame(() => {
+      target.blur();
+      history.push(`/schedule/${shiftId}`);
+    });
+  };
 
   return (
     <IonPage>
@@ -201,7 +212,7 @@ const SchedulePage: React.FC = () => {
                       ]
                         .filter(Boolean)
                         .join(' ')}
-                      onClick={() => history.push(`/schedule/${shift.id}`)}
+                      onClick={(event) => navigateToShift(event, shift.id)}
                       type="button"
                     >
                       <div className="schedule-timeline" aria-hidden="true">
@@ -249,7 +260,7 @@ const SchedulePage: React.FC = () => {
                     key={cell.date.toISOString()}
                     type="button"
                     className={`schedule-month-cell${cell.isToday ? ' schedule-month-cell--today' : ''}${shift ? ' has-shift' : ''}`}
-                    onClick={shift ? () => history.push(`/schedule/${shift.id}`) : undefined}
+                    onClick={shift ? (event) => navigateToShift(event, shift.id) : undefined}
                     disabled={!shift}
                   >
                     <span className="schedule-month-day">{cell.date.getDate()}</span>

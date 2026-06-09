@@ -5,6 +5,7 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
+  IonModal,
   IonPage,
   IonTitle,
   IonToolbar,
@@ -24,25 +25,32 @@ import {
 } from 'ionicons/icons';
 import { useEffect, useMemo, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import { loadShifts, loadShiftRuntime, saveShiftRuntime } from '../data/blobStorage';
+import { loadEmployees, loadShifts, loadShiftRuntime, saveShiftRuntime } from '../data/blobStorage';
 import {
   DAY_NAMES,
   MONTH_NAMES,
   formatHour,
   shiftDuration,
-  getWeekDays,
   type Shift,
   type Break
 } from '../data/scheduleData';
+import type { DemoEmployee } from '../data/employees';
 import './ShiftDetailPage.css';
 
 type ShiftStatus = 'upcoming' | 'in-progress' | 'completed';
 
 const MISC = -1;
 
-function getShiftDateForDayId(id: string): Date {
-  const dayOfWeek = parseInt(id, 10);
-  return getWeekDays(new Date())[dayOfWeek];
+function getShiftDateForShiftId(id: string): Date {
+  const numericId = parseInt(id, 10);
+  const today = new Date();
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+  if (Number.isNaN(numericId)) return weekStart;
+  const resolved = new Date(weekStart);
+  resolved.setDate(weekStart.getDate() + Math.max(0, numericId - 1));
+  return resolved;
 }
 
 function getStatus(shiftDate: Date, startHour: number, endHour: number): ShiftStatus {
@@ -88,6 +96,10 @@ const ShiftDetailPage: React.FC = () => {
   const history = useHistory();
   const [presentAlert] = useIonAlert();
   const [shifts, setShifts] = useState<Record<string, Shift>>({});
+  const [hasLoadedShifts, setHasLoadedShifts] = useState(false);
+  const [employees, setEmployees] = useState<DemoEmployee[]>([]);
+  const [isChangeModalOpen, setIsChangeModalOpen] = useState(false);
+  const [changeSearch, setChangeSearch] = useState('');
   const shift = shifts[shiftId];
 
   const [isClockedIn, setIsClockedIn] = useState(false);
@@ -98,14 +110,28 @@ const ShiftDetailPage: React.FC = () => {
     let active = true;
     (async () => {
       const loaded = await loadShifts();
-      if (active) setShifts(loaded);
+      if (active) {
+        setShifts(loaded);
+        setHasLoadedShifts(true);
+      }
     })();
     return () => {
       active = false;
     };
   }, []);
 
-  const shiftDate = useMemo(() => getShiftDateForDayId(shiftId), [shiftId]);
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const loaded = await loadEmployees();
+      if (active) setEmployees(loaded);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const shiftDate = useMemo(() => getShiftDateForShiftId(shiftId), [shiftId]);
   const status = useMemo(
     () => (shift ? getStatus(shiftDate, shift.startHour, shift.endHour) : 'upcoming'),
     [shift, shiftDate]
@@ -114,9 +140,12 @@ const ShiftDetailPage: React.FC = () => {
     () => (shift && status === 'upcoming' ? formatCountdown(shiftDate, shift.startHour) : null),
     [shift, shiftDate, status]
   );
-  const isToday = useMemo(() => new Date().getDay() === parseInt(shiftId, 10), [shiftId]);
+  const isToday = useMemo(() => {
+    const now = new Date();
+    return now.toDateString() === shiftDate.toDateString();
+  }, [shiftDate]);
 
-  const dayOfWeek = parseInt(shiftId, 10);
+  const dayOfWeek = shiftDate.getDay();
   const headerTitle = `${DAY_NAMES[dayOfWeek]}, ${MONTH_NAMES[shiftDate.getMonth()]} ${shiftDate.getDate()}`;
 
   // Restore persisted state and surface active-break prompt on each visit
@@ -226,6 +255,54 @@ const ShiftDetailPage: React.FC = () => {
     history.push('/chat', { chatWith: name });
   };
 
+  const matchingChangeEmployees = useMemo(() => {
+    if (!shift) return [];
+    const shiftRole = shift.role.toLowerCase();
+    const shiftTokens = shiftRole.split(/\s+/).filter(token => token.length > 3);
+    const keyCardMatches = employees.filter(employee => {
+      const employeeRole = employee.role.toLowerCase();
+      if (employeeRole.includes(shiftRole) || shiftRole.includes(employeeRole)) return true;
+      return shiftTokens.some(token => employeeRole.includes(token));
+    });
+    const query = changeSearch.trim().toLowerCase();
+    return keyCardMatches.filter(employee =>
+      !query ||
+      employee.name.toLowerCase().includes(query) ||
+      employee.role.toLowerCase().includes(query)
+    );
+  }, [changeSearch, employees, shift]);
+
+  const onRequestChange = () => {
+    setChangeSearch('');
+    setIsChangeModalOpen(true);
+  };
+
+  const onChooseChangeEmployee = (employee: DemoEmployee) => {
+    setIsChangeModalOpen(false);
+    presentAlert({
+      header: 'Shift change request sent',
+      message: `We sent a request to ${employee.name} for this ${shift?.role ?? 'shift'}.`,
+      buttons: ['OK'],
+    });
+  };
+
+  if (!hasLoadedShifts) {
+    return (
+      <IonPage>
+        <IonHeader translucent>
+          <IonToolbar className="shift-detail-toolbar">
+            <IonButtons slot="start">
+              <IonBackButton defaultHref="/schedule" />
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent className="shift-detail-content">
+          <div className="shift-detail-empty">Loading shift details...</div>
+        </IonContent>
+      </IonPage>
+    );
+  }
+
   if (!shift) {
     return (
       <IonPage>
@@ -237,7 +314,16 @@ const ShiftDetailPage: React.FC = () => {
           </IonToolbar>
         </IonHeader>
         <IonContent className="shift-detail-content">
-          <div className="shift-detail-empty">No shift found.</div>
+          <div className="shift-detail-empty-wrap">
+            <div className="shift-detail-empty-emoji" aria-hidden="true">🌼</div>
+            <div className="shift-detail-empty-title">Woopsie Daisy!</div>
+            <div className="shift-detail-empty-copy">
+              There doesn&apos;t seem to be a shift for you on that day.
+            </div>
+            <IonButton fill="outline" className="shift-detail-empty-btn" onClick={() => history.push('/schedule')}>
+              Back to Schedule
+            </IonButton>
+          </div>
         </IonContent>
       </IonPage>
     );
@@ -262,7 +348,7 @@ const ShiftDetailPage: React.FC = () => {
 
           {/* Hero card */}
           <div className="sdc sdc--hero">
-            <IonButton fill="clear" size="small" className="shift-hero-request">
+            <IonButton fill="clear" size="small" className="shift-hero-request" onClick={onRequestChange}>
               <IonIcon icon={swapHorizontalOutline} slot="start" />
               Request Change
             </IonButton>
@@ -324,69 +410,73 @@ const ShiftDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Breaks */}
-          <div className="shift-section-label">Breaks</div>
-          <div className="sdc shift-section-card">
-            {breakRows.map((b, i) => {
-              const isActive = activeBreakIndex === i;
-              const isDisabled = !noActiveBreak && !isActive;
-              return (
-                <div
-                  key={i}
-                  className={[
-                    'shift-break-row',
-                    i < breakRows.length - 1 || true ? 'shift-break-row--divider' : '',
-                    isActive ? 'shift-break-row--active' : ''
-                  ].filter(Boolean).join(' ')}
-                >
-                  <IonIcon
-                    icon={b.type === 'meal' ? restaurantOutline : cafeOutline}
-                    className="shift-break-icon"
-                  />
-                  <span className="shift-break-label">{breakLabel(b)}</span>
-                  <span className="shift-break-time">{formatHour(b.startHour)}</span>
-                  <IonButton
-                    fill="clear"
-                    size="small"
-                    disabled={isDisabled}
-                    className={`shift-break-action${isActive ? ' shift-break-action--active' : ''}`}
-                    onClick={() => isActive ? handleEndBreak(i) : handleStartBreak(i)}
-                    aria-label={isActive ? 'End break' : 'Start break'}
-                  >
-                    <IonIcon icon={isActive ? stopCircleOutline : addCircleOutline} />
-                  </IonButton>
-                </div>
-              );
-            })}
+          {/* Breaks (only while actively clocked in today) */}
+          {isToday && isClockedIn ? (
+            <>
+              <div className="shift-section-label">Breaks</div>
+              <div className="sdc shift-section-card">
+                {breakRows.map((b, i) => {
+                  const isActive = activeBreakIndex === i;
+                  const isDisabled = !noActiveBreak && !isActive;
+                  return (
+                    <div
+                      key={i}
+                      className={[
+                        'shift-break-row',
+                        i < breakRows.length - 1 || true ? 'shift-break-row--divider' : '',
+                        isActive ? 'shift-break-row--active' : ''
+                      ].filter(Boolean).join(' ')}
+                    >
+                      <IonIcon
+                        icon={b.type === 'meal' ? restaurantOutline : cafeOutline}
+                        className="shift-break-icon"
+                      />
+                      <span className="shift-break-label">{breakLabel(b)}</span>
+                      <span className="shift-break-time">{formatHour(b.startHour)}</span>
+                      <IonButton
+                        fill="clear"
+                        size="small"
+                        disabled={isDisabled}
+                        className={`shift-break-action${isActive ? ' shift-break-action--active' : ''}`}
+                        onClick={() => isActive ? handleEndBreak(i) : handleStartBreak(i)}
+                        aria-label={isActive ? 'End break' : 'Start break'}
+                      >
+                        <IonIcon icon={isActive ? stopCircleOutline : addCircleOutline} />
+                      </IonButton>
+                    </div>
+                  );
+                })}
 
-            {/* Misc / away row */}
-            {(() => {
-              const isActive = activeBreakIndex === MISC;
-              const isDisabled = !noActiveBreak && !isActive;
-              return (
-                <div
-                  className={[
-                    'shift-break-row',
-                    isActive ? 'shift-break-row--active' : ''
-                  ].filter(Boolean).join(' ')}
-                >
-                  <IonIcon icon={timerOutline} className="shift-break-icon shift-break-icon--misc" />
-                  <span className="shift-break-label">Misc / Away</span>
-                  <span className="shift-break-time">—</span>
-                  <IonButton
-                    fill="clear"
-                    size="small"
-                    disabled={isDisabled}
-                    className={`shift-break-action${isActive ? ' shift-break-action--active' : ''}`}
-                    onClick={() => isActive ? handleEndBreak(MISC) : handleStartBreak(MISC)}
-                    aria-label={isActive ? 'End misc break' : 'Start misc break'}
-                  >
-                    <IonIcon icon={isActive ? stopCircleOutline : addCircleOutline} />
-                  </IonButton>
-                </div>
-              );
-            })()}
-          </div>
+                {/* Misc / away row */}
+                {(() => {
+                  const isActive = activeBreakIndex === MISC;
+                  const isDisabled = !noActiveBreak && !isActive;
+                  return (
+                    <div
+                      className={[
+                        'shift-break-row',
+                        isActive ? 'shift-break-row--active' : ''
+                      ].filter(Boolean).join(' ')}
+                    >
+                      <IonIcon icon={timerOutline} className="shift-break-icon shift-break-icon--misc" />
+                      <span className="shift-break-label">Misc / Away</span>
+                      <span className="shift-break-time">—</span>
+                      <IonButton
+                        fill="clear"
+                        size="small"
+                        disabled={isDisabled}
+                        className={`shift-break-action${isActive ? ' shift-break-action--active' : ''}`}
+                        onClick={() => isActive ? handleEndBreak(MISC) : handleStartBreak(MISC)}
+                        aria-label={isActive ? 'End misc break' : 'Start misc break'}
+                      >
+                        <IonIcon icon={isActive ? stopCircleOutline : addCircleOutline} />
+                      </IonButton>
+                    </div>
+                  );
+                })()}
+              </div>
+            </>
+          ) : null}
 
           {/* Team */}
           <div className="shift-section-header">
@@ -427,6 +517,44 @@ const ShiftDetailPage: React.FC = () => {
 
         </div>
       </IonContent>
+
+      <IonModal isOpen={isChangeModalOpen} onDidDismiss={() => setIsChangeModalOpen(false)}>
+        <div className="shift-change-modal">
+          <div className="shift-change-modal-header">
+            <h3>Request Shift Change</h3>
+            <IonButton fill="clear" size="small" onClick={() => setIsChangeModalOpen(false)}>
+              Close
+            </IonButton>
+          </div>
+          <p className="shift-change-modal-subtitle">
+            Type to find teammates with the <strong>{shift.role}</strong> key card.
+          </p>
+          <input
+            className="shift-change-search"
+            type="search"
+            placeholder="Search employees"
+            value={changeSearch}
+            onChange={event => setChangeSearch(event.target.value)}
+          />
+          <div className="shift-change-list">
+            {matchingChangeEmployees.length ? (
+              matchingChangeEmployees.map(employee => (
+                <button
+                  key={employee.id}
+                  type="button"
+                  className="shift-change-item"
+                  onClick={() => onChooseChangeEmployee(employee)}
+                >
+                  <span className="shift-change-item-name">{employee.name}</span>
+                  <span className="shift-change-item-role">{employee.role}</span>
+                </button>
+              ))
+            ) : (
+              <div className="shift-change-empty">No matching employees found for this key card.</div>
+            )}
+          </div>
+        </div>
+      </IonModal>
     </IonPage>
   );
 };

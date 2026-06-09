@@ -142,8 +142,9 @@ export function getWeekDays(ref: Date): Date[] {
 }
 
 export function formatHour(decimal: number): string {
-  const h = Math.floor(decimal);
-  const m = Math.round((decimal - h) * 60);
+  const normalized = ((decimal % 24) + 24) % 24;
+  const h = Math.floor(normalized);
+  const m = Math.round((normalized - h) * 60);
   const suffix = h < 12 ? 'AM' : 'PM';
   const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return m === 0 ? `${displayH} ${suffix}` : `${displayH}:${String(m).padStart(2, '0')} ${suffix}`;

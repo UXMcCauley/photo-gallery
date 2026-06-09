@@ -116,8 +116,9 @@
 
 .schedule-day-header--today {
   border: 1px solid rgba(99, 179, 237, 0.9);
-  padding: 7px;
-  color: rgba(99, 179, 237, 0.9);
+  padding: 2px 8px;
+  border-radius: 10px;
+  color: rgba(99, 179, 237, 0.575);
 }
 
 .schedule-day-duration {

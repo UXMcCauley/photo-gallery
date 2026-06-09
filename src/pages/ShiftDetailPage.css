@@ -370,9 +370,113 @@
   margin: 0;
 }
 
-.shift-detail-empty {
-  padding: 40px 20px;
+.shift-detail-empty-wrap {
+  min-height: calc(100vh - 120px);
+  padding: 26px 20px 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   text-align: center;
-  color: rgba(168, 174, 195, 0.5);
+}
+
+.shift-detail-empty-emoji {
+  font-size: 2rem;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.25));
+}
+
+.shift-detail-empty-title {
+  font-size: 1.18rem;
+  font-weight: 800;
+  color: rgba(242, 246, 255, 0.95);
+  letter-spacing: 0.01em;
+}
+
+.shift-detail-empty-copy {
+  max-width: 290px;
+  color: rgba(188, 198, 223, 0.84);
   font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.shift-detail-empty-btn {
+  margin-top: 6px;
+  --border-radius: 12px;
+  --color: rgba(99, 179, 237, 0.92);
+  --border-color: rgba(99, 179, 237, 0.52);
+  --background: rgba(99, 179, 237, 0.08);
+}
+
+.shift-change-modal {
+  min-height: 100%;
+  background: linear-gradient(140deg, rgba(17, 20, 40, 0.96), rgba(10, 16, 34, 0.98));
+  padding: calc(var(--ion-safe-area-top, 0px) + 18px) 16px calc(var(--ion-safe-area-bottom, 0px) + 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shift-change-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.shift-change-modal-header h3 {
+  margin: 0;
+  font-size: 1.02rem;
+  color: rgba(240, 245, 255, 0.96);
+}
+
+.shift-change-modal-subtitle {
+  margin: 0;
+  color: rgba(186, 198, 225, 0.78);
+  font-size: 0.82rem;
+}
+
+.shift-change-search {
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(245, 248, 255, 0.95);
+  font-size: 0.88rem;
+  padding: 10px 12px;
+}
+
+.shift-change-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  padding-bottom: 6px;
+}
+
+.shift-change-item {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(240, 245, 255, 0.95);
+  text-align: left;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.shift-change-item-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.shift-change-item-role {
+  font-size: 0.76rem;
+  color: rgba(186, 198, 225, 0.74);
+}
+
+.shift-change-empty {
+  padding: 14px 10px;
+  color: rgba(170, 183, 214, 0.62);
+  text-align: center;
+  font-size: 0.82rem;
 }
