@@ -342,7 +342,7 @@ const DashboardPage: React.FC = () => {
 
             {/* Shift cards */}
             <div className="dash-section-header">
-              <span className="dash-section-label">Shifts This Week</span>
+              <span className="dash-section-label dash-section-label--shifts">Shifts This Week</span>
             </div>
             <div className="shift-rail">
               {upcomingShifts.map((shift) => (
@@ -362,7 +362,7 @@ const DashboardPage: React.FC = () => {
             </div>
 
             <div className="dash-section-header">
-              <span className="dash-section-label">Active Contests &amp; Game Vacations</span>
+              <span className="dash-section-label dash-section-label--contests">Contests &amp; Gamecations</span>
             </div>
             <div className="contest-rail">
               {activeContests.map(contest => (
@@ -383,7 +383,7 @@ const DashboardPage: React.FC = () => {
 
             {/* Announcements */}
             <div className="dash-section-header">
-              <span className="dash-section-label">Announcements</span>
+              <span className="dash-section-label dash-section-label--announcements">What's Happening</span>
             </div>
             <div className="announcement-rail">
               {announcements.map((announcement) => (

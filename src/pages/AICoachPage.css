@@ -58,7 +58,7 @@
 
 .ai-filter-row {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   gap: 8px;
   align-items: center;
 }
@@ -77,6 +77,28 @@
   color: rgba(255, 255, 255, 0.88);
   padding: 9px 10px;
   font-size: 0.83rem;
+}
+
+.ai-filter-search-toggle {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.75);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ai-filter-search-toggle.active {
+  border-color: rgba(123, 63, 255, 0.72);
+  background: rgba(123, 63, 255, 0.2);
+  color: rgba(237, 227, 255, 0.95);
+}
+
+.ai-filter-search-row {
+  margin-top: 1px;
 }
 
 .ai-settings-btn {
@@ -104,14 +126,46 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.ai-thread-category-select {
-  max-width: 146px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.88);
-  font-size: 0.73rem;
-  padding: 6px 8px;
+.ai-conv-swipe .conv-actions {
+  width: 184px;
+}
+
+.ai-conv-row.swiped {
+  transform: translateX(-184px);
+}
+
+.ai-conv-actions {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+}
+
+.ai-conv-action {
+  border: none;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 6px;
+}
+
+.ai-conv-action--pin {
+  background: #7b3fff;
+}
+
+.ai-conv-action--category {
+  background: rgba(44, 48, 88, 0.96);
+}
+
+.ai-conv-category-select {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(8, 11, 30, 0.76);
+  color: rgba(246, 248, 255, 0.95);
+  font-size: 0.66rem;
+  padding: 4px 6px;
 }
 
 .ai-settings-view {
@@ -150,15 +204,45 @@
   gap: 6px;
 }
 
-.ai-assistant-label {
-  margin-left: 2px;
-  margin-bottom: 3px;
-  font-size: 0.66rem;
-  color: rgba(206, 218, 248, 0.72);
+.ai-thread-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-thread-rename-btn {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.ai-bubble-label {
+  margin: 0 5px 6px;
+  font-size: 0.77rem;
+  line-height: 1.1;
+  color: rgba(214, 224, 250, 0.68);
+}
+
+.ai-bubble-label--me {
+  color: rgba(245, 232, 255, 0.72);
+}
+
+.ai-bubble-label--assistant {
+  color: rgba(199, 214, 248, 0.68);
+}
+
+.ai-coach-page .thread-messages {
+  padding: 12px 8px 10px;
+}
+
+.ai-coach-page .bubble-stack {
+  max-width: min(84%, 430px);
+}
+
+.ai-coach-page .msg-row {
+  gap: 4px;
 }
 
 .ai-thinking {
-  margin: 6px 0 0 34px;
+  margin: 6px 0 0 8px;
   color: rgba(212, 223, 250, 0.72);
   font-size: 0.74rem;
 }
