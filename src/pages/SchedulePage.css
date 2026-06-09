@@ -163,11 +163,11 @@
 }
 
 .schedule-week-detail {
-  margin-top: 6px;
+  margin-top: 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-height: calc(100vh - 290px - var(--ion-safe-area-bottom, 0px));
+  max-height: calc(90vh - 200px - var(--ion-safe-area-bottom, 0px));
   overflow-y: auto;
   padding-bottom: 8px;
 }
