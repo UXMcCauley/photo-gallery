@@ -29,6 +29,7 @@ import ChatArchivedPage from './pages/ChatArchivedPage';
 import ChatNewPage from './pages/ChatNewPage';
 import ChatPage from './pages/ChatPage';
 import DashboardPage from './pages/DashboardPage';
+import KeycardsPage from './pages/KeycardsPage';
 import LoginPage from './pages/LoginPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import SchedulePage from './pages/SchedulePage';
@@ -64,7 +65,7 @@ const tabDefs = [
   { id: 'dashboard', href: '/dashboard', icon: gridOutline },
   { id: 'chat', href: '/chat', icon: chatbubbleEllipsesOutline },
   { id: 'schedule', href: '/schedule', icon: calendarOutline },
-  { id: 'projects', href: '/projects', icon: albumsOutline },
+  { id: 'keycards', href: '/keycards', icon: albumsOutline },
   { id: 'ai-coach', href: '/ai-coach', icon: sparklesOutline },
 ] as const;
 
@@ -72,7 +73,7 @@ const tabPathPrefixes: Record<string, string> = {
   '/dashboard': 'dashboard',
   '/chat': 'chat',
   '/schedule': 'schedule',
-  '/projects': 'projects',
+  '/keycards': 'keycards',
   '/ai-coach': 'ai-coach',
 };
 
@@ -207,11 +208,11 @@ const AppTabs: React.FC = () => {
               subtitle="Training plans, prompts, and progress insights go here."
             />
           </Route>
+          <Route exact path="/keycards">
+            <KeycardsPage />
+          </Route>
           <Route exact path="/projects">
-            <PlaceholderPage
-              title="Projects"
-              subtitle="Project groups, team spaces, and card stacks."
-            />
+            <Redirect to="/keycards" />
           </Route>
           <Route exact path="/announcements">
             <PlaceholderPage
