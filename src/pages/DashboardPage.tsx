@@ -16,7 +16,6 @@ import {
   chevronForwardOutline,
   logOutOutline,
   shuffleOutline,
-  helpCircleOutline,
   timeOutline,
 } from 'ionicons/icons';
 import type { ScrollDetail } from '@ionic/core';
@@ -95,16 +94,12 @@ const DashboardPage: React.FC = () => {
       if (p === 0) {
         el.style.opacity = '';
         el.style.filter = '';
-        el.style.boxShadow = '';
-        el.style.borderColor = '';
         return;
       }
 
       const L = (a: number, b: number) => (a + (b - a) * p).toFixed(3);
       el.style.opacity      = L(1, 0.25);
       el.style.filter       = `blur(${(p * 6).toFixed(2)}px)`;
-      el.style.boxShadow    = `0 ${L(14, 2)}px ${L(38, 5)}px rgba(0,0,0,${L(0.28, 0.05)}),inset 0 1px 0 rgba(255,255,255,${L(0.14, 0.02)})`;
-      el.style.borderColor  = `rgba(255,255,255,${L(0.15, 0.02)})`;
     });
   }, []);
 
@@ -231,10 +226,6 @@ const DashboardPage: React.FC = () => {
     [currentTime]
   );
 
-  const onMetricHelpTap = (label: string, description: string) => {
-    presentAlert({ header: `${label} metric`, message: description, buttons: ['Got it'] });
-  };
-
   return (
     <IonPage className="dashboard-page">
       <IonContent fullscreen scrollEvents onIonScroll={onContentScroll}>
@@ -262,21 +253,12 @@ const DashboardPage: React.FC = () => {
               {metrics.map((metric, index) => (
                 <IonCard
                   key={metric.label}
-                  className="metric-card ios-surface"
+                  className="metric-card"
                   ref={(el) => { metricsRef.current[index] = el as HTMLElement; }}
                 >
                   <IonCardHeader>
                     <div className="metric-header-row">
                       <IonCardSubtitle>{metric.label}</IonCardSubtitle>
-                      <IonButton
-                        aria-label={`More about ${metric.label}`}
-                        className="metric-help-button"
-                        fill="clear"
-                        size="small"
-                        onClick={() => onMetricHelpTap(metric.label, metric.description)}
-                      >
-                        <IonIcon icon={helpCircleOutline} />
-                      </IonButton>
                     </div>
                   </IonCardHeader>
                   <IonCardContent>
