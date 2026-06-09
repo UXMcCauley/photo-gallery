@@ -1,0 +1,605 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { IonContent, IonPage, IonIcon, isPlatform, useIonActionSheet } from '@ionic/react';
+import {
+  addOutline, archiveOutline, attachOutline, cameraOutline,
+  chevronBackOutline, imagesOutline, personAddOutline, pinOutline, searchOutline,
+  sendOutline, volumeMuteOutline,
+} from 'ionicons/icons';
+import { useHistory, useLocation } from 'react-router-dom';
+import './ChatPage.css';
+
+const isIOS = isPlatform('ios') || /iphone|ipad|ipod/i.test(
+  typeof navigator !== 'undefined' ? navigator.userAgent : ''
+);
+
+const STORAGE_KEY = 'reign_chat_v2';
+
+interface Message {
+  id: string;
+  text: string;
+  sender: 'me' | 'other';
+  ts: number;
+}
+
+interface Conversation {
+  id: string;
+  name: string;
+  role: string;
+  initials: string;
+  color: string;
+  type: 'dm' | 'group';
+  pinned: boolean;
+  muted: boolean;
+  archived: boolean;
+  messages: Message[];
+  unread: number;
+}
+
+const CONTACTS: Omit<Conversation, 'pinned' | 'muted' | 'archived' | 'messages' | 'unread'>[] = [
+  { id: 'manager',  name: 'Sarah K.',       role: 'Store Manager',      initials: 'SK', color: '#7b3fff', type: 'dm'    },
+  { id: 'coach',    name: 'REIGN AI Coach', role: 'Career assistant',    initials: 'AI', color: '#c840e8', type: 'dm'    },
+  { id: 'team',     name: 'Team Channel',   role: '12 members',          initials: 'TC', color: '#46c9ff', type: 'group' },
+  { id: 'hr',       name: 'HR Support',     role: 'Benefits & policies', initials: 'HR', color: '#00c875', type: 'dm'    },
+  { id: 'prev-mgr', name: 'Jordan R.',      role: 'Previous Manager',    initials: 'JR', color: '#e87d30', type: 'dm'    },
+];
+
+const AUTO_REPLIES: Record<string, string[]> = {
+  manager: [
+    "Thanks! I'll get back to you before end of shift.",
+    "Got it — let's chat at the team meeting Thursday.",
+    "No problem, I'll sort that out for you.",
+    "Sounds great, appreciate you reaching out!",
+  ],
+  coach: [
+    "Your metrics are trending up this week 📈 Keep it going!",
+    "Based on your recent shifts, I'd focus on upsell volume.",
+    "You're 3 milestones from your next badge! 🏆",
+    "Great progress. Want me to build out a goal plan?",
+  ],
+  team: [
+    "Anyone free for a shift swap this Saturday? 🙌",
+    "Don't forget — training session at 2pm tomorrow!",
+    "Great work everyone, solid numbers this week 💪",
+    "Who's bringing snacks to the huddle? 😄",
+  ],
+  hr: [
+    "Thanks for reaching out! We'll respond within 1–2 business days.",
+    "Your request has been received and is being processed.",
+    "Please check your email for the updated documentation.",
+    "Feel free to reach out if you need anything else!",
+  ],
+};
+
+function makeSeedConversations(): Conversation[] {
+  const now = Date.now();
+  return [
+    {
+      ...CONTACTS[0], pinned: false, muted: false, archived: false, unread: 0,
+      messages: [
+        { id: 'm1', text: "Hey! Checking your availability for next week.", sender: 'other', ts: now - 86400000 * 2 },
+        { id: 'm2', text: "I'm free Tuesday through Friday — Saturday works too!", sender: 'me', ts: now - 86400000 * 2 + 300000 },
+        { id: 'm3', text: "Perfect, I'll get the schedule sorted. Thanks! 👍", sender: 'other', ts: now - 86400000 * 2 + 420000 },
+      ],
+    },
+    {
+      ...CONTACTS[1], pinned: false, muted: false, archived: false, unread: 1,
+      messages: [
+        { id: 'c1', text: "Welcome back! Your streak is at 7 days. Keep it going 🔥", sender: 'other', ts: now - 3600000 },
+      ],
+    },
+    {
+      ...CONTACTS[2], pinned: false, muted: false, archived: false, unread: 2,
+      messages: [
+        { id: 't1', text: "Team meeting today at 3pm — don't be late! 🕒", sender: 'other', ts: now - 7200000 },
+        { id: 't2', text: "On my way! 👍", sender: 'me', ts: now - 7100000 },
+        { id: 't3', text: "See everyone there! 🙌", sender: 'other', ts: now - 7000000 },
+      ],
+    },
+    {
+      ...CONTACTS[3], pinned: false, muted: false, archived: false, unread: 0,
+      messages: [
+        { id: 'h1', text: "Your PTO request for Dec 24–26 has been approved ✅", sender: 'other', ts: now - 86400000 },
+      ],
+    },
+    {
+      ...CONTACTS[4], pinned: false, muted: false, archived: true, unread: 0,
+      messages: [
+        { id: 'j1', text: "Thanks for all your hard work this quarter!", sender: 'other', ts: now - 86400000 * 14 },
+        { id: 'j2', text: "Learned a lot from you. Thanks for the mentorship 🙏", sender: 'me', ts: now - 86400000 * 14 + 60000 },
+        { id: 'j3', text: "Best of luck in the new role — stay in touch!", sender: 'other', ts: now - 86400000 * 14 + 120000 },
+      ],
+    },
+  ];
+}
+
+function loadOrSeed(): Conversation[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as Conversation[];
+  } catch {}
+  const seed = makeSeedConversations();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
+  return seed;
+}
+
+function persist(convs: Conversation[]) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(convs)); } catch {}
+}
+
+function formatTime(ts: number): string {
+  const d = new Date(ts);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+  const diffDays = Math.floor((Date.now() - ts) / 86400000);
+  if (diffDays < 7) return d.toLocaleDateString([], { weekday: 'short' });
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+type FilterTab = 'all' | 'dm' | 'group';
+const FILTER_TABS: { id: FilterTab; label: string }[] = [
+  { id: 'all',   label: 'All'    },
+  { id: 'dm',    label: 'DMs'    },
+  { id: 'group', label: 'Groups' },
+];
+
+const EMPLOYEES = [
+  { name: 'Alex M.',   role: 'Team Lead'         },
+  { name: 'Jordan T.', role: 'Sales Associate'    },
+  { name: 'Casey R.',  role: 'Floor Manager'      },
+  { name: 'Sam P.',    role: 'Customer Service'   },
+  { name: 'River B.',  role: 'Shift Supervisor'   },
+];
+
+const ChatPage: React.FC = () => {
+  const history  = useHistory();
+  const location = useLocation<{ openConvId?: string }>();
+  const [presentActionSheet] = useIonActionSheet();
+
+  const [convs, setConvs]         = useState<Conversation[]>(loadOrSeed);
+  const [activeId, setActiveId]   = useState<string | null>(null);
+  const [inputText, setInputText] = useState('');
+  const [typing, setTyping]       = useState(false);
+  const [menuOpen, setMenuOpen]   = useState(false);
+  const [search, setSearch]       = useState('');
+  const [filter, setFilter]       = useState<FilterTab>('all');
+  const [swipedId, setSwipedId]   = useState<string | null>(null);
+
+  const msgEndRef   = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const cameraRef   = useRef<HTMLInputElement>(null);
+  const libraryRef  = useRef<HTMLInputElement>(null);
+  const fileRef     = useRef<HTMLInputElement>(null);
+  const touchX      = useRef(0);
+  const touchY      = useRef(0);
+
+  const platformClass = isIOS ? 'chat-ios' : 'chat-android';
+  const activeConv    = convs.find(c => c.id === activeId) ?? null;
+  const totalUnread   = convs.reduce((n, c) => n + c.unread, 0);
+
+  const archivedCount = convs.filter(c => c.archived).length;
+  const filtered      = convs.filter(c => {
+    if (c.archived) return false;
+    const matchSearch = !search || c.name.toLowerCase().includes(search.toLowerCase());
+    const matchFilter = filter === 'all' || c.type === filter;
+    return matchSearch && matchFilter;
+  });
+  const pinnedConvs   = filtered.filter(c => c.pinned);
+  const unpinnedConvs = filtered.filter(c => !c.pinned);
+
+  useEffect(() => {
+    if (!activeId) return;
+    const t = setTimeout(() => msgEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
+    return () => clearTimeout(t);
+  }, [activeId, convs]);
+
+  // Open a conversation when returning from the archived page
+  useEffect(() => {
+    const id = location.state?.openConvId;
+    if (id && !activeId) {
+      openConv(id);
+      history.replace('/chat', {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
+
+  const openConv = (id: string) => {
+    if (swipedId) { setSwipedId(null); return; }
+    setConvs(prev => {
+      const next = prev.map(c => c.id === id ? { ...c, unread: 0 } : c);
+      persist(next);
+      return next;
+    });
+    setActiveId(id);
+  };
+
+  const goBack = useCallback(() => {
+    setActiveId(null);
+    setInputText('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+  }, []);
+
+  // ── Swipe ──
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchX.current = e.touches[0].clientX;
+    touchY.current = e.touches[0].clientY;
+  };
+
+  const onTouchEnd = (id: string, e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchX.current;
+    const dy = e.changedTouches[0].clientY - touchY.current;
+    if (Math.abs(dx) < Math.abs(dy)) return;
+    if (dx < -60) setSwipedId(id);
+    else if (dx > 20) setSwipedId(null);
+  };
+
+  // ── Row actions ──
+  const pinConv = (id: string) => {
+    setConvs(prev => { const n = prev.map(c => c.id === id ? { ...c, pinned: !c.pinned } : c); persist(n); return n; });
+    setSwipedId(null);
+  };
+
+  const muteConv = (id: string) => {
+    setConvs(prev => { const n = prev.map(c => c.id === id ? { ...c, muted: !c.muted } : c); persist(n); return n; });
+    setSwipedId(null);
+  };
+
+  const archiveConv = (id: string) => {
+    setConvs(prev => { const n = prev.map(c => c.id === id ? { ...c, archived: true, pinned: false } : c); persist(n); return n; });
+    setSwipedId(null);
+  };
+
+  // ── Send ──
+  const sendMessage = useCallback(() => {
+    const text = inputText.trim();
+    if (!text || !activeId || typing) return;
+    setInputText('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+
+    const myMsg: Message = { id: `${Date.now()}-me`, text, sender: 'me', ts: Date.now() };
+    setConvs(prev => { const n = prev.map(c => c.id === activeId ? { ...c, messages: [...c.messages, myMsg] } : c); persist(n); return n; });
+
+    setTyping(true);
+    const pool    = AUTO_REPLIES[activeId] ?? AUTO_REPLIES.manager;
+    const replyTx = pool[Math.floor(Math.random() * pool.length)];
+    const delay   = 1100 + Math.random() * 1100;
+
+    setTimeout(() => {
+      setTyping(false);
+      const reply: Message = { id: `${Date.now()}-other`, text: replyTx, sender: 'other', ts: Date.now() };
+      setConvs(prev => { const n = prev.map(c => c.id === activeId ? { ...c, messages: [...c.messages, reply] } : c); persist(n); return n; });
+    }, delay);
+  }, [inputText, activeId, typing]);
+
+  const handleMenuOption = (type: 'camera' | 'library' | 'file') => {
+    setMenuOpen(false);
+    if (type === 'camera')  cameraRef.current?.click();
+    if (type === 'library') libraryRef.current?.click();
+    if (type === 'file')    fileRef.current?.click();
+  };
+
+  const handleAddEmployee = () => {
+    setMenuOpen(false);
+    presentActionSheet({
+      header: 'Add Employee to Chat',
+      buttons: [
+        ...EMPLOYEES.map(emp => ({
+          text: `${emp.name}  ·  ${emp.role}`,
+          handler: () => {},
+        })),
+        { text: 'Cancel', role: 'cancel' },
+      ],
+    });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  };
+
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputText(e.target.value);
+    const el = e.target;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  };
+
+  // Filter slider
+  const filterIdx  = FILTER_TABS.findIndex(t => t.id === filter);
+  const sliderLeft = filterIdx === 0 ? '3px' : `calc(${filterIdx} * 33.33%)`;
+
+  const listClass   = activeId ? 'panel-exit-left' : 'panel-enter';
+  const threadClass = activeId ? 'panel-enter'    : 'panel-exit-right';
+
+  // ── Conversation row ──
+  const renderRow = (conv: Conversation) => {
+    const last     = conv.messages[conv.messages.length - 1];
+    const preview  = last ? (last.sender === 'me' ? `You: ${last.text}` : last.text) : 'No messages yet';
+    const isSwiped = swipedId === conv.id;
+
+    return (
+      <div key={conv.id} className="conv-swipe-wrap">
+        {/* Revealed actions */}
+        <div className="conv-actions">
+          <button className="conv-action conv-action--pin" onClick={() => pinConv(conv.id)}>
+            <IonIcon icon={pinOutline} />
+            <span>{conv.pinned ? 'Unpin' : 'Pin'}</span>
+          </button>
+          <button className="conv-action conv-action--mute" onClick={() => muteConv(conv.id)}>
+            <IonIcon icon={volumeMuteOutline} />
+            <span>{conv.muted ? 'Unmute' : 'Mute'}</span>
+          </button>
+          <button className="conv-action conv-action--archive" onClick={() => archiveConv(conv.id)}>
+            <IonIcon icon={archiveOutline} />
+            <span>Archive</span>
+          </button>
+        </div>
+
+        {/* Slideable row */}
+        <button
+          className={`conv-row${isSwiped ? ' swiped' : ''}`}
+          onClick={() => openConv(conv.id)}
+          onTouchStart={onTouchStart}
+          onTouchEnd={e => onTouchEnd(conv.id, e)}
+        >
+          <div className="chat-avatar" style={{ background: conv.color }}>
+            {conv.initials}
+          </div>
+          <div className="conv-body">
+            <div className="conv-top">
+              <span className="conv-name">{conv.name}</span>
+              <div className="conv-top-right">
+                {conv.pinned && <IonIcon icon={pinOutline}        className="conv-status-pin"  />}
+                {conv.muted  && <IonIcon icon={volumeMuteOutline} className="conv-status-mute" />}
+                {last && <span className="conv-time">{formatTime(last.ts)}</span>}
+              </div>
+            </div>
+            <div className="conv-bottom">
+              <span className={`conv-preview${conv.muted ? ' muted' : ''}`}>{preview}</span>
+              {conv.unread > 0 && !conv.muted && <span className="conv-badge">{conv.unread}</span>}
+            </div>
+          </div>
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <IonPage className={`chat-page ${platformClass}`}>
+      <IonContent scrollY={false}>
+        <div className="chat-root">
+
+          {/* ── Conversation list ── */}
+          <div className={`chat-panel chat-list-panel ${listClass}`}>
+
+            <div className="chat-list-header">
+              <div className="chat-list-title-row">
+                <h1 className="chat-list-title">
+                  Messages
+                  {totalUnread > 0 && <span className="chat-unread-chip">{totalUnread}</span>}
+                </h1>
+                <button className="archive-access-btn" onClick={() => history.push('/chat/archived')}>
+                  <IonIcon icon={archiveOutline} />
+                  <span>Archived</span>
+                  {archivedCount > 0 && (
+                    <span className="archive-count">{archivedCount}</span>
+                  )}
+                </button>
+              </div>
+
+              {/* Search */}
+              <div className="chat-search-wrap">
+                <IonIcon icon={searchOutline} className="chat-search-icon" />
+                <input
+                  type="search"
+                  className="chat-search"
+                  placeholder="Search"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+              </div>
+
+              {/* Filter tabs — matching login page auth-tabs */}
+              <div className="list-filter-tabs">
+                <div
+                  className="list-filter-slider"
+                  style={{ left: sliderLeft, width: 'calc(33.33% - 3px)' }}
+                />
+                {FILTER_TABS.map(tab => (
+                  <button
+                    key={tab.id}
+                    className={`list-filter-btn${filter === tab.id ? ' active' : ''}`}
+                    onClick={() => setFilter(tab.id)}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div
+              className="chat-list-body"
+              onClick={() => swipedId && setSwipedId(null)}
+            >
+              {/* Pinned section */}
+              {pinnedConvs.length > 0 && (
+                <>
+                  <div className="conv-section-label">
+                    <IonIcon icon={pinOutline} />
+                    Pinned
+                  </div>
+                  {pinnedConvs.map(renderRow)}
+                  <div className="conv-section-divider" />
+                </>
+              )}
+
+              {unpinnedConvs.map(renderRow)}
+
+              {filtered.length === 0 && (
+                <div className="conv-empty">
+                  <p>No conversations match "{search}"</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── Thread view ── */}
+          <div className={`chat-panel chat-thread-panel ${threadClass}`}>
+            {activeConv && (
+              <>
+                <div className="thread-header">
+                  <button className="back-btn" onClick={goBack}>
+                    <IonIcon icon={chevronBackOutline} />
+                    {isIOS && <span>Back</span>}
+                  </button>
+                  <div className="thread-contact">
+                    <div className="chat-avatar chat-avatar--sm" style={{ background: activeConv.color }}>
+                      {activeConv.initials}
+                    </div>
+                    <div>
+                      <div className="thread-name">{activeConv.name}</div>
+                      <div className="thread-role">{activeConv.role}</div>
+                    </div>
+                  </div>
+                  <div className="thread-actions">
+                    <button
+                      className={`thread-action-btn${activeConv.pinned ? ' active' : ''}`}
+                      onClick={() => pinConv(activeConv.id)}
+                      aria-label={activeConv.pinned ? 'Unpin' : 'Pin'}
+                    >
+                      <IonIcon icon={pinOutline} />
+                    </button>
+                    <button
+                      className={`thread-action-btn${activeConv.muted ? ' active' : ''}`}
+                      onClick={() => muteConv(activeConv.id)}
+                      aria-label={activeConv.muted ? 'Unmute' : 'Mute'}
+                    >
+                      <IonIcon icon={volumeMuteOutline} />
+                    </button>
+                    <button
+                      className="thread-action-btn thread-action-btn--archive"
+                      onClick={() => { archiveConv(activeConv.id); goBack(); }}
+                      aria-label="Archive"
+                    >
+                      <IonIcon icon={archiveOutline} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="thread-messages">
+                  {activeConv.messages.map((msg, i) => {
+                    const prev       = activeConv.messages[i - 1];
+                    const next       = activeConv.messages[i + 1];
+                    const groupStart = !prev || prev.sender !== msg.sender;
+                    const groupEnd   = !next || next.sender !== msg.sender;
+                    const showAvatar = msg.sender === 'other' && groupStart;
+
+                    return (
+                      <div key={msg.id} className={`msg-row ${msg.sender}${groupStart ? ' group-start' : ''}`}>
+                        {msg.sender === 'other' && (
+                          <div
+                            className={`chat-avatar chat-avatar--xs${showAvatar ? '' : ' ghost'}`}
+                            style={{ background: showAvatar ? activeConv.color : 'transparent' }}
+                          >
+                            {showAvatar ? activeConv.initials : ''}
+                          </div>
+                        )}
+                        <div className="bubble-stack">
+                          <div className={`bubble ${msg.sender === 'me' ? 'bubble-me' : 'bubble-other'}${groupEnd ? ' tail' : ''}`}>
+                            {msg.text}
+                          </div>
+                          {groupEnd && (
+                            <div className={`msg-time ${msg.sender === 'me' ? 'time-right' : 'time-left'}`}>
+                              {formatTime(msg.ts)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {typing && (
+                    <div className="msg-row other group-start">
+                      <div className="chat-avatar chat-avatar--xs" style={{ background: activeConv.color }}>
+                        {activeConv.initials}
+                      </div>
+                      <div className="bubble bubble-other tail bubble-typing">
+                        <span /><span /><span />
+                      </div>
+                    </div>
+                  )}
+                  <div ref={msgEndRef} />
+                </div>
+
+                <div className="thread-input-bar">
+                  {menuOpen && <div className="attach-backdrop" onClick={() => setMenuOpen(false)} />}
+
+                  <div className="attach-wrap">
+                    {menuOpen && (
+                      <div className="attach-menu">
+                        <button className="attach-menu-item" onClick={() => handleMenuOption('camera')}>
+                          <span className="attach-icon-wrap" style={{ background: 'linear-gradient(135deg, #7b3fff, #c840e8)' }}>
+                            <IonIcon icon={cameraOutline} />
+                          </span>
+                          Take Photo
+                        </button>
+                        <button className="attach-menu-item" onClick={() => handleMenuOption('library')}>
+                          <span className="attach-icon-wrap" style={{ background: 'linear-gradient(135deg, #c840e8, #ff47a9)' }}>
+                            <IonIcon icon={imagesOutline} />
+                          </span>
+                          Photo Library
+                        </button>
+                        <button className="attach-menu-item" onClick={() => handleMenuOption('file')}>
+                          <span className="attach-icon-wrap" style={{ background: 'linear-gradient(135deg, #2e85ff, #46c9ff)' }}>
+                            <IonIcon icon={attachOutline} />
+                          </span>
+                          Attach File
+                        </button>
+                        <button className="attach-menu-item" onClick={handleAddEmployee}>
+                          <span className="attach-icon-wrap" style={{ background: 'linear-gradient(135deg, #00c875, #46c9ff)' }}>
+                            <IonIcon icon={personAddOutline} />
+                          </span>
+                          Add Employee
+                        </button>
+                      </div>
+                    )}
+                    <button
+                      className={`attach-btn${menuOpen ? ' open' : ''}`}
+                      onClick={() => setMenuOpen(v => !v)}
+                    >
+                      <IonIcon icon={addOutline} />
+                    </button>
+                  </div>
+
+                  <textarea
+                    ref={textareaRef}
+                    className="msg-input"
+                    placeholder="Message..."
+                    value={inputText}
+                    onChange={handleTextareaChange}
+                    onKeyDown={handleKeyDown}
+                    rows={1}
+                  />
+                  <button
+                    className={`send-btn${inputText.trim() ? ' ready' : ''}`}
+                    onClick={sendMessage}
+                    disabled={!inputText.trim() || typing}
+                  >
+                    <IonIcon icon={sendOutline} />
+                  </button>
+
+                  <input ref={cameraRef}  type="file" accept="image/*"        capture="environment" style={{ display: 'none' }} />
+                  <input ref={libraryRef} type="file" accept="image/*,video/*"                      style={{ display: 'none' }} />
+                  <input ref={fileRef}    type="file" accept="*/*"                                  style={{ display: 'none' }} />
+                </div>
+              </>
+            )}
+          </div>
+
+        </div>
+      </IonContent>
+    </IonPage>
+  );
+};
+
+export default ChatPage;

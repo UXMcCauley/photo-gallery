@@ -1,99 +1,110 @@
-.dashboard-header {
-  transition: transform 280ms ease;
+/* ──────────────── PAGE STRUCTURE ──────────────── */
+
+.dashboard-page {
+  --background: transparent;
 }
 
-.dashboard-toolbar {
-  --background-gradient: linear-gradient(180deg, rgba(42, 44, 63, 0.62), rgba(20, 21, 35, 0.72));
-  background: var(--background-gradient);
-  padding: 12px;
-  text-align: center;
-  vertical-align: middle;
+.dashboard-page ion-content {
+  --background: transparent;
+}
+
+/* Stretch scroll container to flex column — same pattern as login page */
+.dashboard-page ion-content::part(scroll) {
+  min-height: 100%;
   display: flex;
+  flex-direction: column;
+}
+
+.dash-scene {
+  flex: 1;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(
+    140deg,
+    rgba(17, 20, 40, 0.38) 0%,
+    rgba(28, 17, 56, 0.26) 34%,
+    rgba(15, 33, 62, 0.2) 68%,
+    rgba(10, 16, 34, 0.3) 100%
+  );
+}
+
+/* ──────────────── HERO (top — metrics) ──────────────── */
+
+.dash-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(10px);
+  padding: max(var(--ion-safe-area-top, 24px), 36px) 14px 28px;
+  position: relative;
 }
 
-.dashboard-logo {
-  display: block;
-  width: min(120px, 36vw);
-  height: auto;
-  margin: 7px auto;
-  transform-origin: left center;
-  transition: width 280ms ease, margin 280ms ease, transform 280ms ease;
+.dash-hero-glow {
+  position: absolute;
+  width: 380px;
+  height: 380px;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    rgba(123, 63, 255, 0.16) 0%,
+    rgba(255, 71, 169, 0.07) 45%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 0;
 }
 
-.dashboard-header--compact .dashboard-toolbar {
-  --padding-top: 6px;
-  --padding-bottom: 2px;
-  --padding-start: 4px;
-  --padding-end: 4px;
-  --min-height: 28px;
-  min-height: 28px;
-  padding: 0;
+.dash-hero .metrics-grid {
+  position: relative;
+  z-index: 1;
+  width: 100%;
 }
 
-.dashboard-header--compact .dashboard-logo {
-  width: min(65px, 20vw);
-  margin-left: 12px;
-  margin-top: 7px;
-  transform: translateY(-1px);
+/* ──────────────── PANEL (bottom — like login card) ──────────────── */
+
+.dash-panel {
+  flex: 0 0 auto;
+  background: rgba(14, 12, 32, 0.82);
+  backdrop-filter: blur(32px) saturate(150%);
+  -webkit-backdrop-filter: blur(32px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 28px 28px 0 0;
+  border-bottom: none;
+  padding: 24px 18px calc(var(--ion-safe-area-bottom, 0px) + 90px);
+  box-shadow: 0 -6px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
-.dashboard-content {
-  --section-padding-x: 12px;
-  --section-padding-y: 10px;
-  --dashboard-bottom-space: 24px;
-  background:
-    linear-gradient(
-      140deg,
-      rgba(17, 20, 40, 0.38) 0%,
-      rgba(28, 17, 56, 0.26) 34%,
-      rgba(15, 33, 62, 0.2) 68%,
-      rgba(10, 16, 34, 0.3) 100%
-    );
-  padding-bottom: var(--dashboard-bottom-space);
+/* ──────────────── CLOCK IN MODULE ──────────────── */
+
+.dash-clock {
+  margin-bottom: 4px;
 }
 
-.dashboard-section {
-  padding: var(--section-padding-y) var(--section-padding-x);
-}
-
-.ios-surface {
-  --background: linear-gradient(180deg, rgba(42, 44, 63, 0.62), rgba(20, 21, 35, 0.72));
-  background: var(--background);
-  color: #f4f5f8;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 18px;
-  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(10px);
-}
-
-.ion-card-subtitle {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  text-align: center;
-}
-
-.clock-card {
-  margin: 0;
-}
-
-.clock-card ion-card-title {
-  font-size: 2.1rem;
+.dash-time {
+  font-size: 2.4rem;
   font-weight: 800;
   letter-spacing: 0.02em;
   text-align: center;
+  color: #f0f2fa;
+  line-height: 1;
+  margin-bottom: 4px;
 }
 
-.clock-card ion-card-subtitle {
-  margin-top: 4px;
+.dash-date {
   text-align: center;
   color: #a8aec3;
+  font-size: 0.88rem;
   letter-spacing: 0.01em;
-  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+
+.dash-clock-btn {
+  margin-bottom: 0;
 }
 
 .clock-alert {
@@ -111,6 +122,57 @@
   line-height: 1.25;
   color: #ffe6bc;
 }
+
+/* ──────────────── SECTION HEADERS ──────────────── */
+
+.dash-section-header {
+  margin: 20px 0 10px;
+}
+
+.dash-section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+/* ──────────────── CHAT NOTIFICATIONS ──────────────── */
+
+.dash-chat-notifs {
+  margin-top: 4px;
+}
+
+.dash-chat-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.32);
+  font-size: 0.85rem;
+}
+
+.dash-chat-empty ion-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+/* ──────────────── SHARED SURFACE ──────────────── */
+
+.ios-surface {
+  --background: linear-gradient(180deg, rgba(42, 44, 63, 0.62), rgba(20, 21, 35, 0.72));
+  background: var(--background);
+  color: #f4f5f8;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 18px;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(10px);
+}
+
+/* ──────────────── METRICS GRID ──────────────── */
 
 .metrics-grid {
   display: grid;
@@ -174,14 +236,14 @@
   line-height: 1;
 }
 
+/* ──────────────── ANNOUNCEMENTS ──────────────── */
+
 .announcement-rail {
   display: flex;
   gap: 12px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  scroll-padding-left: var(--section-padding-x);
-  padding: 2px var(--section-padding-x) 4px;
-  margin-top: var(--section-padding-y);
+  padding: 2px 0 4px;
 }
 
 .announcement-rail::-webkit-scrollbar {
@@ -190,14 +252,14 @@
 
 .announcement-card {
   margin: 0;
-  min-width: 85%;
+  min-width: 78%;
   scroll-snap-align: start;
   overflow: hidden;
 }
 
 .announcement-card img {
   width: 100%;
-  height: 160px;
+  height: 140px;
   object-fit: cover;
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { IonContent, IonPage } from '@ionic/react';
 import { useAuth } from '../context/AuthContext';
 import './LoginPage.css';
@@ -32,6 +32,50 @@ const LoginPage: React.FC = () => {
   const [forgotSent,  setForgotSent]  = useState(false);
 
   const { login, signup } = useAuth();
+
+  // ── Height animation refs ──
+  const cardRef      = useRef<HTMLDivElement>(null);
+  const prevHRef     = useRef(0);
+  const animTargetRef = useRef<number | null>(null);
+
+  // Animate card height whenever view or forgotSent changes
+  useLayoutEffect(() => {
+    const el  = cardRef.current;
+    const prev = prevHRef.current;
+    if (!el || prev === 0) return;
+
+    // Measure natural height of new content
+    el.style.transition = 'none';
+    el.style.height     = 'auto';
+    el.offsetHeight;                                  // flush layout
+    const next = el.getBoundingClientRect().height;
+
+    if (Math.abs(next - prev) < 1) {
+      el.style.height     = '';
+      el.style.transition = '';
+      prevHRef.current    = 0;
+      return;
+    }
+
+    // Snap to old height, then animate to new height
+    animTargetRef.current = next;
+    el.style.height = `${prev}px`;
+    el.offsetHeight;                                  // flush layout
+    el.style.transition = '';
+    el.style.height     = `${next}px`;
+
+    el.addEventListener('transitionend', () => {
+      if (animTargetRef.current === next) el.style.height = 'auto';
+    }, { once: true });
+
+    prevHRef.current = 0;
+  }, [view, forgotSent]);
+
+  const captureHeight = () => {
+    if (cardRef.current) {
+      prevHRef.current = cardRef.current.getBoundingClientRect().height;
+    }
+  };
 
   const triggerShake = () => {
     setShake(true);
@@ -86,6 +130,7 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setPhase('loading');
     await new Promise(r => setTimeout(r, 1100));
+    captureHeight();
     setPhase('idle');
     setForgotSent(true);
   };
@@ -96,6 +141,7 @@ const LoginPage: React.FC = () => {
   };
 
   const switchView = (v: AuthView) => {
+    captureHeight();
     setErrorMsg('');
     setPhase('idle');
     setView(v);
@@ -114,13 +160,12 @@ const LoginPage: React.FC = () => {
             <div className="login-logo-glow" />
             <img src={rLogo} alt="REIGN" className="login-r-logo" />
             <span className="login-brand-reign">REIGN</span>
-            <span className="login-brand-product">Fate</span>
             <span className="login-brand-tagline">career companion</span>
           </div>
 
           {/* ── Form card ── */}
           <div className="login-card-wrap">
-            <div className="login-card">
+            <div className="login-card" ref={cardRef}>
 
               {/* Tabs (hidden on forgot view) */}
               {view !== 'forgot' && (

@@ -6,17 +6,18 @@ import {
   IonCardSubtitle,
   IonCardTitle,
   IonContent,
-  IonHeader,
   IonIcon,
   IonPage,
   useIonAlert,
-  IonToolbar
 } from '@ionic/react';
-import { checkmarkCircleOutline, helpCircleOutline, timeOutline } from 'ionicons/icons';
-import type { ScrollDetail } from '@ionic/core';
+import {
+  chatbubbleEllipsesOutline,
+  checkmarkCircleOutline,
+  helpCircleOutline,
+  timeOutline,
+} from 'ionicons/icons';
 import { useEffect, useMemo, useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import logo from '../assets/reignos-logo.png';
 import './DashboardPage.css';
 
 const metrics = [
@@ -91,7 +92,6 @@ const DashboardPage: React.FC = () => {
   const history = useHistory();
   const [presentAlert] = useIonAlert();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [isHeaderCompact, setIsHeaderCompact] = useState(false);
 
   const onAnnouncementTap = (announcementId: string) => {
     history.push(`/announcements/${announcementId}`);
@@ -101,7 +101,6 @@ const DashboardPage: React.FC = () => {
     const intervalId = window.setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
-
     return () => window.clearInterval(intervalId);
   }, []);
 
@@ -110,7 +109,7 @@ const DashboardPage: React.FC = () => {
       currentTime.toLocaleTimeString([], {
         hour: 'numeric',
         minute: '2-digit',
-        second: '2-digit'
+        second: '2-digit',
       }),
     [currentTime]
   );
@@ -121,53 +120,23 @@ const DashboardPage: React.FC = () => {
         weekday: 'long',
         month: 'long',
         day: 'numeric',
-        year: 'numeric'
+        year: 'numeric',
       }),
     [currentTime]
   );
 
   const onMetricHelpTap = (label: string, description: string) => {
-    presentAlert({
-      header: `${label} metric`,
-      message: description,
-      buttons: ['Got it']
-    });
-  };
-
-  const onContentScroll = (event: CustomEvent<ScrollDetail>) => {
-    setIsHeaderCompact(event.detail.scrollTop > 36);
+    presentAlert({ header: `${label} metric`, message: description, buttons: ['Got it'] });
   };
 
   return (
-    <IonPage>
-      {/* <IonHeader translucent className={isHeaderCompact ? 'dashboard-header dashboard-header--compact' : 'dashboard-header'}>
-        <IonToolbar className="dashboard-toolbar">
-          <img alt="ReignOS" src={logo} className="dashboard-logo" />
-        </IonToolbar>
-      </IonHeader> */}
-      <IonContent fullscreen scrollEvents onIonScroll={onContentScroll}>
-        <div className="dashboard-content">
-          <div className="dashboard-section">
-            <IonCard className="clock-card ios-surface-transparent no-border dashboard-header">
-              <IonCardHeader>
-                <IonCardTitle>{timeLabel}</IonCardTitle>
-                <IonCardSubtitle>{dateLabel}</IonCardSubtitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonButton expand="block" color="success">
-                  <IonIcon icon={checkmarkCircleOutline} slot="start" />
-                  Clock In
-                </IonButton>
-                <div className={`clock-alert ${isHeaderCompact ? 'dashboard-header--compact' : ''}`} role="note" aria-live="polite">
-                  <p className={`clock-note ${isHeaderCompact ? 'dashboard-header--compact' : ''}`}>
-                    {isHeaderCompact ? 'You have not been added to a team yet. Please contact your employer.' : 'You have not been added to a team yet. Please contact your employer.'} 
-                  </p>
-                </div>
-              </IonCardContent>
-            </IonCard>
-          </div>
+    <IonPage className="dashboard-page">
+      <IonContent fullscreen>
+        <div className="dash-scene">
 
-          <div className="dashboard-section">
+          {/* ── Hero: Metrics Grid ── */}
+          <div className="dash-hero">
+            <div className="dash-hero-glow" />
             <div className="metrics-grid">
               {metrics.map((metric) => (
                 <IonCard key={metric.label} className="metric-card ios-surface">
@@ -196,24 +165,58 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="announcement-rail">
-            {announcements.map((announcement) => (
-              <IonCard
-                key={announcement.id}
-                button
-                className="announcement-card ios-surface"
-                onClick={() => onAnnouncementTap(announcement.id)}
-              >
-                <img alt={announcement.title} src={announcement.image} />
-                <IonCardHeader>
-                  <IonCardTitle>{announcement.title}</IonCardTitle>
-                  <IonCardSubtitle>
-                    <IonIcon icon={timeOutline} /> {announcement.time}
-                  </IonCardSubtitle>
-                </IonCardHeader>
-                <IonCardContent>Tap to open details</IonCardContent>
-              </IonCard>
-            ))}
+          {/* ── Panel: Clock In, Announcements, Chat Notifications ── */}
+          <div className="dash-panel">
+
+            {/* Clock In module */}
+            <div className="dash-clock">
+              <div className="dash-time">{timeLabel}</div>
+              <div className="dash-date">{dateLabel}</div>
+              <IonButton expand="block" color="success" className="dash-clock-btn">
+                <IonIcon icon={checkmarkCircleOutline} slot="start" />
+                Clock In
+              </IonButton>
+              <div className="clock-alert">
+                <p className="clock-note">
+                  You have not been added to a team yet. Please contact your employer.
+                </p>
+              </div>
+            </div>
+
+            {/* Announcements */}
+            <div className="dash-section-header">
+              <span className="dash-section-label">Announcements</span>
+            </div>
+            <div className="announcement-rail">
+              {announcements.map((announcement) => (
+                <IonCard
+                  key={announcement.id}
+                  button
+                  className="announcement-card ios-surface"
+                  onClick={() => onAnnouncementTap(announcement.id)}
+                >
+                  <img alt={announcement.title} src={announcement.image} />
+                  <IonCardHeader>
+                    <IonCardTitle>{announcement.title}</IonCardTitle>
+                    <IonCardSubtitle>
+                      <IonIcon icon={timeOutline} /> {announcement.time}
+                    </IonCardSubtitle>
+                  </IonCardHeader>
+                </IonCard>
+              ))}
+            </div>
+
+            {/* Chat Notifications */}
+            <div className="dash-section-header">
+              <span className="dash-section-label">New Messages</span>
+            </div>
+            <div className="dash-chat-notifs">
+              <div className="dash-chat-empty">
+                <IonIcon icon={chatbubbleEllipsesOutline} />
+                <span>No new messages</span>
+              </div>
+            </div>
+
           </div>
         </div>
       </IonContent>

@@ -25,6 +25,8 @@ import {
   personCircleOutline,
   sparklesOutline
 } from 'ionicons/icons';
+import ChatArchivedPage from './pages/ChatArchivedPage';
+import ChatPage from './pages/ChatPage';
 import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
 import PlaceholderPage from './pages/PlaceholderPage';
@@ -57,11 +59,65 @@ import './theme/variables.css';
 
 setupIonicReact();
 
-const tabByPath: Record<string, string> = {
+const tabDefs = [
+  { id: 'dashboard', href: '/dashboard', icon: gridOutline },
+  { id: 'chat', href: '/chat', icon: chatbubbleEllipsesOutline },
+  { id: 'schedule', href: '/schedule', icon: calendarOutline },
+  { id: 'ai-coach', href: '/ai-coach', icon: sparklesOutline },
+  { id: 'profile-menu', href: null, icon: personCircleOutline },
+] as const;
+
+const tabPathPrefixes: Record<string, string> = {
   '/dashboard': 'dashboard',
   '/chat': 'chat',
   '/schedule': 'schedule',
-  '/ai-coach': 'ai-coach'
+  '/ai-coach': 'ai-coach',
+};
+
+function resolveTab(pathname: string): string {
+  for (const [prefix, tab] of Object.entries(tabPathPrefixes)) {
+    if (pathname === prefix || pathname.startsWith(prefix + '/')) return tab;
+  }
+  return 'dashboard';
+}
+
+const FloatingTabBar: React.FC<{
+  currentTab: string;
+  onProfileTap: () => void;
+}> = ({ currentTab, onProfileTap }) => {
+  const history = useHistory();
+  const activeIndex = tabDefs.findIndex(t => t.id === currentTab);
+
+  const handleTap = (tab: (typeof tabDefs)[number]) => {
+    if (tab.id === 'profile-menu') {
+      onProfileTap();
+    } else if (tab.href) {
+      history.push(tab.href);
+    }
+  };
+
+  return (
+    <div className="floating-tab-bar">
+      <div className="floating-tab-bar-track">
+        <div
+          className="tab-indicator"
+          style={{ transform: `translateX(${Math.max(0, activeIndex) * 100}%)` }}
+        >
+          <div className="tab-indicator-circle" />
+        </div>
+        {tabDefs.map((tab) => (
+          <button
+            key={tab.id}
+            className={`tab-btn${currentTab === tab.id ? ' active' : ''}`}
+            onClick={() => handleTap(tab)}
+            aria-label={tab.id.replace(/-/g, ' ')}
+          >
+            <IonIcon icon={tab.icon} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 };
 
 const AppTabs: React.FC = () => {
@@ -69,10 +125,9 @@ const AppTabs: React.FC = () => {
   const history = useHistory();
   const { logout } = useAuth();
 
-  const currentTab = tabByPath[location.pathname] ?? 'dashboard';
+  const currentTab = resolveTab(location.pathname);
 
-  const onProfileTap = (event: CustomEvent) => {
-    event.preventDefault();
+  const onProfileTap = () => {
     const profileMenu = document.querySelector('ion-menu[menu-id="profile-drawer"]') as
       | HTMLIonMenuElement
       | null;
@@ -140,10 +195,10 @@ const AppTabs: React.FC = () => {
             <DashboardPage />
           </Route>
           <Route exact path="/chat">
-            <PlaceholderPage
-              title="Chat"
-              subtitle="Conversations and coaching threads will live here."
-            />
+            <ChatPage />
+          </Route>
+          <Route exact path="/chat/archived">
+            <ChatArchivedPage />
           </Route>
           <Route exact path="/schedule">
             <SchedulePage />
@@ -198,29 +253,15 @@ const AppTabs: React.FC = () => {
           </Route>
         </IonRouterOutlet>
 
-        <IonTabBar slot="bottom" className="app-tab-bar">
-          <IonTabButton selected={currentTab === 'dashboard'} tab="dashboard" href="/dashboard">
-            <IonIcon aria-hidden="true" icon={gridOutline} />
-            <IonLabel>Dashboard</IonLabel>
-          </IonTabButton>
-          <IonTabButton selected={currentTab === 'chat'} tab="chat" href="/chat">
-            <IonIcon aria-hidden="true" icon={chatbubbleEllipsesOutline} />
-            <IonLabel>Chat</IonLabel>
-          </IonTabButton>
-          <IonTabButton selected={currentTab === 'schedule'} tab="schedule" href="/schedule">
-            <IonIcon aria-hidden="true" icon={calendarOutline} />
-            <IonLabel>Schedule</IonLabel>
-          </IonTabButton>
-          <IonTabButton selected={currentTab === 'ai-coach'} tab="ai-coach" href="/ai-coach">
-            <IonIcon aria-hidden="true" icon={sparklesOutline} />
-            <IonLabel>AI Coach</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="profile-menu" href="/dashboard" onClick={onProfileTap}>
-            <IonIcon aria-hidden="true" icon={personCircleOutline} />
-            <IonLabel>Menu</IonLabel>
-          </IonTabButton>
+        {/* Hidden — keeps Ionic tab routing state intact */}
+        <IonTabBar slot="bottom" style={{ display: 'none' }}>
+          {tabDefs.map(t => (
+            <IonTabButton key={t.id} tab={t.id} href={t.href ?? '/dashboard'} />
+          ))}
         </IonTabBar>
       </IonTabs>
+
+      <FloatingTabBar currentTab={currentTab} onProfileTap={onProfileTap} />
     </>
   );
 };
