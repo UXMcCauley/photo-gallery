@@ -67,6 +67,7 @@ const ChatArchivedPage: React.FC = () => {
     } catch {}
     setConvs(prev => prev.filter(c => c.id !== id));
     setSwipedId(null);
+    history.push('/chat');
   };
 
   const openConv = (id: string) => {

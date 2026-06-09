@@ -16,8 +16,10 @@ import {
   helpCircleOutline,
   timeOutline,
 } from 'ionicons/icons';
-import { useEffect, useMemo, useState } from 'react';
+import type { ScrollDetail } from '@ionic/core';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHistory } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './DashboardPage.css';
 
 const metrics = [
@@ -88,10 +90,58 @@ const announcements = [
   }
 ];
 
+function pickGreeting(): string {
+  const h = new Date().getHours();
+  const morning = ['Good morning', 'Rise and shine', 'Morning'];
+  const afternoon = ['Good afternoon', 'Hey there', 'Afternoon'];
+  const evening = ['Good evening', 'Evening', 'Hey'];
+  const anytime = ['Welcome back', 'Great to see you', "Let's go"];
+  const pool = [...(h < 12 ? morning : h < 17 ? afternoon : evening), ...anytime];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 const DashboardPage: React.FC = () => {
   const history = useHistory();
   const [presentAlert] = useIonAlert();
   const [currentTime, setCurrentTime] = useState(new Date());
+  const { userName } = useAuth();
+  const metricsRef = useRef<(HTMLElement | null)[]>([]);
+
+  const onContentScroll = useCallback((e: CustomEvent<ScrollDetail>) => {
+    const s = e.detail.scrollTop;
+    metricsRef.current.forEach((el, i) => {
+      if (!el) return;
+      const start = i < 3 ? 35 : 0;  // top row lags 35px behind bottom row
+      const p = Math.min(1, Math.max(0, (s - start) / 110));
+
+      if (p === 0) {
+        el.style.opacity = '';
+        el.style.filter = '';
+        el.style.boxShadow = '';
+        el.style.borderColor = '';
+        return;
+      }
+
+      const L = (a: number, b: number) => (a + (b - a) * p).toFixed(3);
+      el.style.opacity      = L(1, 0.25);
+      el.style.filter       = `blur(${(p * 6).toFixed(2)}px)`;
+      el.style.boxShadow    = `0 ${L(14, 2)}px ${L(38, 5)}px rgba(0,0,0,${L(0.28, 0.05)}),inset 0 1px 0 rgba(255,255,255,${L(0.14, 0.02)})`;
+      el.style.borderColor  = `rgba(255,255,255,${L(0.15, 0.02)})`;
+    });
+  }, []);
+
+  const firstName = userName
+    ? userName.includes('@')
+      ? userName.split('@')[0]
+      : userName.split(' ')[0]
+    : 'there';
+
+  const [greeting] = useState(pickGreeting);
+
+  const openProfileMenu = () => {
+    const menu = document.querySelector('ion-menu[menu-id="profile-drawer"]') as HTMLIonMenuElement | null;
+    menu?.open();
+  };
 
   const onAnnouncementTap = (announcementId: string) => {
     history.push(`/announcements/${announcementId}`);
@@ -131,15 +181,35 @@ const DashboardPage: React.FC = () => {
 
   return (
     <IonPage className="dashboard-page">
-      <IonContent fullscreen>
+      <IonContent fullscreen scrollEvents onIonScroll={onContentScroll}>
         <div className="dash-scene">
 
-          {/* ── Hero: Metrics Grid ── */}
+          {/* ── Hero: Greeting + Metrics Grid ── */}
           <div className="dash-hero">
+
+            {/* Transparent greeting row — floats over aurora */}
+            <div className="dash-greeting-row">
+              <div className="dash-greeting-left">
+                <span className="dash-greeting-sub">{greeting},</span>
+                <span className="dash-greeting-name">{firstName}</span>
+              </div>
+              <button
+                className="dash-avatar-btn"
+                onClick={openProfileMenu}
+                aria-label="Open menu"
+              >
+                {firstName.charAt(0).toUpperCase()}
+              </button>
+            </div>
+
             <div className="dash-hero-glow" />
             <div className="metrics-grid">
-              {metrics.map((metric) => (
-                <IonCard key={metric.label} className="metric-card ios-surface">
+              {metrics.map((metric, index) => (
+                <IonCard
+                  key={metric.label}
+                  className="metric-card ios-surface"
+                  ref={(el) => { metricsRef.current[index] = el as HTMLElement; }}
+                >
                   <IonCardHeader>
                     <div className="metric-header-row">
                       <IonCardSubtitle>{metric.label}</IonCardSubtitle>
@@ -167,6 +237,7 @@ const DashboardPage: React.FC = () => {
 
           {/* ── Panel: Clock In, Announcements, Chat Notifications ── */}
           <div className="dash-panel">
+            <div className="dash-panel-handle" />
 
             {/* Clock In module */}
             <div className="dash-clock">

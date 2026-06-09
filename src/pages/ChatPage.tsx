@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { IonContent, IonPage, IonIcon, isPlatform, useIonActionSheet } from '@ionic/react';
 import {
   addOutline, archiveOutline, attachOutline, cameraOutline,
-  chevronBackOutline, imagesOutline, personAddOutline, pinOutline, searchOutline,
+  chevronBackOutline, createOutline, imagesOutline, personAddOutline, pinOutline, searchOutline,
   sendOutline, volumeMuteOutline,
 } from 'ionicons/icons';
 import { useHistory, useLocation } from 'react-router-dom';
@@ -375,7 +375,7 @@ const ChatPage: React.FC = () => {
             <div className="chat-list-header">
               <div className="chat-list-title-row">
                 <h1 className="chat-list-title">
-                  Messages
+                  Chats
                   {totalUnread > 0 && <span className="chat-unread-chip">{totalUnread}</span>}
                 </h1>
                 <button className="archive-access-btn" onClick={() => history.push('/chat/archived')}>
@@ -598,6 +598,14 @@ const ChatPage: React.FC = () => {
 
         </div>
       </IonContent>
+
+      {/* New message FAB — visible in list/archived, hidden in thread */}
+      {!activeId && (
+        <button className="new-message-fab" aria-label="New message">
+          <IonIcon icon={createOutline} />
+        </button>
+      )}
+
     </IonPage>
   );
 };
